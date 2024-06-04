@@ -1,28 +1,33 @@
 mod models;
 
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
-use models::{Pool, Pools};
-use rocket::{get, launch, post, routes, uri, State};
-use rocket::form::{Contextual, Form};
-use rocket::fs::{FileServer, Options, relative};
-use rocket::request::FlashMessage;
-use rocket::response::{Flash, Redirect};
-use rocket_dyn_templates::{context, Template};
 use crate::models::PoolDTO;
+use models::{Pool, Pools};
+use rocket::form::{Contextual, Form};
+use rocket::fs::{relative, FileServer, Options};
+use rocket::response::Redirect;
+use rocket::{get, launch, post, routes, State};
+use rocket_dyn_templates::{context, Template};
 
 #[launch]
 fn rocket() -> _ {
-    let pools: Pools = Arc::new(Mutex::new(Vec::new()));
+    let pools: Pools = Mutex::new(Vec::new());
 
     rocket::build()
         // add templating system
         .attach(Template::fairing())
         .manage(pools)
         // serve content from disk
-        .mount("/public", FileServer::new(relative!("/public"), Options::Missing | Options::NormalizeDirs))
+        .mount(
+            "/public",
+            FileServer::new(
+                relative!("/public"),
+                Options::Missing | Options::NormalizeDirs,
+            ),
+        )
         // register routes
-        .mount("/", routes![root, new, save_new])
+        .mount("/", routes![root, new, save_new, show_pool])
 }
 
 #[get("/new")]
@@ -30,7 +35,7 @@ async fn new() -> Template {
     Template::render("new", context! {})
 }
 #[post("/new", data = "<form>")]
-async fn save_new(form: Form<Contextual<'_, PoolDTO>>, pools: &State<Pools>) -> Template {
+async fn save_new(form: Form<Contextual<'_, PoolDTO>>, pools: &State<Pools>) -> Redirect {
     let mut pools = pools.lock().unwrap();
     match form.value {
         Some(ref pool_dto) => {
@@ -38,13 +43,31 @@ async fn save_new(form: Form<Contextual<'_, PoolDTO>>, pools: &State<Pools>) -> 
             let new_pool = Pool::new(id, pool_dto.title.clone(), pool_dto.options.clone());
             println!("new pool created: {:?}", new_pool);
             pools.push(new_pool);
-            Template::render("new", context! { message: "Form submitted successfully!" })
-        },
+            Redirect::to(format!("/pools/{}", id))
+        }
         None => {
             println!("Form validation failed");
-            Template::render("new", context! { message: "Form submission failed. Please try again." })
+            Redirect::to(format!("/pools/new"))
         }
     }
+}
+
+#[get("/pools/<id>")]
+async fn show_pool(id: usize, pools: &State<Pools>) -> Template {
+    let pools = pools.lock().unwrap();
+    let pool = pools.get(id).unwrap();
+    let mut options = Vec::new();
+    for (idx, option) in pool.options.iter().enumerate() {
+        options.push(context! {
+            idx: idx,
+            option: option,
+        });
+    }
+
+    Template::render(
+        "pool",
+        context! { pool_id: pool.id, title: &pool.title, options: options },
+    )
 }
 
 #[get("/")]

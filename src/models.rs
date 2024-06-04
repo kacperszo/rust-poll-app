@@ -1,4 +1,4 @@
-use rocket::{FromForm};
+use rocket::{serde::Serialize, FromForm};
 use std::sync::{Arc, Mutex};
 
 #[derive(FromForm, Debug)]
@@ -21,4 +21,4 @@ impl Pool {
     }
 }
 
-pub type Pools = Arc<Mutex<Vec<Pool>>>;
+pub type Pools = Mutex<Vec<Pool>>;
