@@ -1,0 +1,43 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
+    <title>Rust Pool App</title>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Rust Pool App</h1>
+      <form method="post" id="form">
+        <label for="title">Pool title</label>
+        <input name="title" required id="title" />
+        
+        <article id="options"></article>
+        
+        <button type="button" id="btn_add">add option</button>
+        <button id="btn_save">save pool</button>
+      </form>
+    </main>
+    <script>
+    let i = 0;
+    const form = document.getElementById("form");
+    const optionsDiv = document.getElementById("options");
+    const addBtn = document.getElementById("btn_add");
+
+    addBtn.addEventListener("click", () => {
+        const input = document.createElement("input");
+        input.id = `option_${i}`;
+        input.name = `options[]`; // Use options[] for the name to create an array
+        optionsDiv.appendChild(input);
+        i++; // Increment i to ensure unique ids and names for subsequent inputs
+    });
+    </script>
+  </body>
+</html>
