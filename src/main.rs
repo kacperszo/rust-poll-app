@@ -3,11 +3,12 @@ mod models;
 use std::sync::Mutex;
 
 use crate::models::PoolDTO;
+use crate::models::VoteDTO;
 use models::{Pool, Pools};
 use rocket::form::{Contextual, Form};
 use rocket::fs::{relative, FileServer, Options};
 use rocket::response::Redirect;
-use rocket::{get, launch, post, routes, State};
+use rocket::{get, launch, post, routes, uri, State};
 use rocket_dyn_templates::{context, Template};
 
 #[launch]
@@ -27,7 +28,21 @@ fn rocket() -> _ {
             ),
         )
         // register routes
-        .mount("/", routes![root, new, save_new, show_pool])
+        .mount("/", routes![root, new, save_new, show_pool, vote])
+}
+#[post("/pools/<id>/vote", data = "<form>")]
+async fn vote(id: usize, form: Form<Contextual<'_, VoteDTO>>, pools: &State<Pools>) -> Redirect {
+    let mut pools = pools.lock().unwrap();
+
+    if let Some(pool) = pools.get_mut(id) {
+        if let Some(vote_form) = &form.value {
+            if vote_form.option < pool.options.len() {
+                pool.votes[vote_form.option] += 1;
+            }
+        }
+    }
+
+    Redirect::to(uri!(show_pool(id)))
 }
 
 #[get("/new")]
@@ -61,6 +76,7 @@ async fn show_pool(id: usize, pools: &State<Pools>) -> Template {
         options.push(context! {
             idx: idx,
             option: option,
+            votes: pool.votes[idx]
         });
     }
 
@@ -69,7 +85,6 @@ async fn show_pool(id: usize, pools: &State<Pools>) -> Template {
         context! { pool_id: pool.id, title: &pool.title, options: options },
     )
 }
-
 #[get("/")]
 async fn root() -> Template {
     Template::render("root", context! {})
