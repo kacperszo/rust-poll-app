@@ -1,5 +1,5 @@
-use rocket::{serde::Serialize, FromForm};
-use std::sync::{Arc, Mutex};
+use rocket::FromForm;
+use std::sync::Mutex;
 
 #[derive(FromForm, Debug)]
 pub struct PoolDTO {

@@ -70,20 +70,26 @@ async fn save_new(form: Form<Contextual<'_, PoolDTO>>, pools: &State<Pools>) -> 
 #[get("/pools/<id>")]
 async fn show_pool(id: usize, pools: &State<Pools>) -> Template {
     let pools = pools.lock().unwrap();
-    let pool = pools.get(id).unwrap();
-    let mut options = Vec::new();
-    for (idx, option) in pool.options.iter().enumerate() {
-        options.push(context! {
-            idx: idx,
-            option: option,
-            votes: pool.votes[idx]
-        });
-    }
+    let pool = pools.get(id);
 
-    Template::render(
-        "pool",
-        context! { pool_id: pool.id, title: &pool.title, options: options },
-    )
+    match pool {
+        Some(_pool) => {
+            let mut options = Vec::new();
+            for (idx, option) in _pool.options.iter().enumerate() {
+                options.push(context! {
+                    idx: idx,
+                    option: option,
+                    votes: _pool.votes[idx]
+                });
+            }
+
+            Template::render(
+                "pool",
+                context! { pool_id: _pool.id, title: &_pool.title, options: options },
+            )
+        }
+        None => Template::render("pool", context! { error:"Pool not found" }),
+    }
 }
 #[get("/")]
 async fn root() -> Template {
